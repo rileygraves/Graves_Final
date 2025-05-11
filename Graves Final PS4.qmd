@@ -56,6 +56,9 @@ rls <- read.csv("2023-24-Religious-Landscape-Study-Dataset-Public-Use-File/2023-
 # select relevant variables
 rls <- rls[c("GUIDE_A", "GUIDE_B", "GUIDE_C", "GUIDE_D", "RELTRAD", "RELPER", "IDEO", "PARTY", "WEIGHT")]
 
+# write csv so the data is small enough to upload to GitHub
+#write.csv(rls, "/Users/rileygraves/Documents/JH/R Programming Course/Programming Final/rls.csv", row.names = FALSE)
+
 # remove 'refused' responses
 rls <- rls[(rls$GUIDE_A != 99),]
 rls <- rls[(rls$GUIDE_B != 99),]
