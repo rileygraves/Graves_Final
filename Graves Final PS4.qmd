@@ -1,0 +1,288 @@
+---
+title: "Programming Final"
+format: html
+editor: visual
+execute: 
+  echo: false
+  warning: false
+  message: false
+---
+
+Link to GitHub Repo: https://github.com/rileygraves/Graves_Final.git
+
+## The Data
+
+The dataset chosen for this assignment is the 2023-24 Religious Landscape Study (RLS) Dataset from the Pew Research Center. This dataset was generated using address-based sampling across all 50 states and the District of Columbia, giving nearly all U.S. adults a chance to participate in the survey. The survey was conducted in both English and Spanish, and covers topics such as "religious identity, religious beliefs and practices, spirituality, social and political values, and more. This dataset may provide insight into not only American attitudes toward religion, but also daily practices, correlation with other behavior, and general spirituality. The data may be found here https://www.pewresearch.org/dataset/2023-24-religious-landscape-study-rls-dataset/
+Pew Research Center. 2025. “2023-24 U.S. Religious Landscape Study Dataset – Public Use File.” doi: 10.58094/3kwb-bf52.
+
+The unit of observation is the American individual, and their specific responses to the survey. The raw data includes 38,908 respondents or observations, and 654 variables. After removing unwanted variables and nonresponse to our desired variables, we are left with 9 variables including weight and 34,076 respondents or observations. The variables as selected are described in Table 1 below. As this is survey data, all the variables being used are categorical, either ordered or unordered. The nature of this categorical data can be more difficult to work with than numerical data as some traditional statistical methods do not apply as well such as regression analysis.
+
+| Variable | Description |
+|------------------------------------|------------------------------------|
+| GUIDE_A | How important are religious teachings and beliefs when making decisions about right and wrong, 5 point scale from 'Not at all important' to 'Extremely important' |
+| GUIDE_B | How important are logic and reason when making decisions about right and wrong, 5 point scale from 'Not at all important' to 'Extremely important' |
+| GUIDE_C | How important are practical experience and common sense when making decisions about right and wrong, 5 point scale from 'Not at all important' to 'Extremely important' |
+| GUIDE_D | How important is scientific information when making decisions about right and wrong, 5 point scale from 'Not at all important' to 'Extremely important' |
+| RELTRAD | Respondent's religious tradition, 15 options |
+| RELPER | To what extend do you consider yourself a religious person, 4 point scale from 'Not at all religious' to 'Very religious |
+| IDEO | In general, would you describe your political views as... 5 point scale from 'Very liberal' to 'Very conservative' |
+| PARTY | In politics today, do you consider yourself a... 4 options, including 'Republican', 'Democrat', 'Independent', and 'Something else' |
+| WEIGHT | Full-sample raked weight |
+
+: Table 1: Variable Definitions
+
+## The Variables
+
+The four guide variables selected will provide insight into the origin of peoples moral compass–religious teachings and beliefs, logic and reason, practical experience and common sense, or scientific information. This is important to understand why the American people think the way that they do, and to recognize where values come from. When compared to differing ideologies or partisanship using those variables, differences or similarities between the values of the two dominant American political parties will hopefully begin to emerge. This information is valuable not only from a research perspective, but could inform Party leaders on how to more effectively message to their base, using the things most central to their lives. For those who respond that religious teachings and beliefs are most central to making decisions about what is right and wrong, the variables detailing religion and religiosity are important to discover if there is a specific teaching or level of religiosity in common. Altogether, these variables paint a picture of what motivates the American people in the decisions that they make, and their reasoning for beliefs in what is right or wrong.
+
+## Presentation
+
+Create presentation of descriptive statistics or visualizations that provide initial insights into the data and interpret the results (one or two insights from these data). Create tabular or visual results to summarize the data. Descriptive statistics include mean, median, IQR, and standard deviation. For categorical variables, consider a frequency table.
+
+Table 2 shows summary statistics for all ordered categorical variables included in the scope of this research. Looking at the output, the four guide measurements are particularly interesting. Guide A, which measures the role of religious teachings and beliefs in making decisions about right and wrong, has a weighted mean of 2.57. On our five point scale, this is halfway between 'Very important' and 'Somewhat important'. This is almost a full point on the scale higher, meaning less important, than logic and reason and practical experience and common sense, and just over half a point on the scale higher than scientific information. Of note, the standard deviation for Guide A is also greater than the three other guides. This suggests that on average, religious teachings and beliefs are less important than logic and reason, practical experience and common sense, and scientific information when making decisions about right and wrong. The high standard deviation could mean that people are more often on the edges of the scale–that is, they either consider religion extremely important or not at all important. Further demographic study into this data could parse out if these divisions are along group lines.
+
+This pull away from religion in informing morality is further supported, although somewhat tenuously, by the summary statistics on the Religiosity variable. The mean value is 2.44, which falls between 'Somewhat religious' and 'Not too religious', clearly leaning away from rote religious devotion. Lastly, the ideology variable mean falls at 2.90, just below an even split between very conservative and very liberal.
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(Hmisc)
+library(survey)
+library(knitr)
+
+# load the data
+rls <- read.csv("2023-24-Religious-Landscape-Study-Dataset-Public-Use-File/2023-24 RLS Public Use File Feb 19.csv")
+
+# select relevant variables
+rls <- rls[c("GUIDE_A", "GUIDE_B", "GUIDE_C", "GUIDE_D", "RELTRAD", "RELPER", "IDEO", "PARTY", "WEIGHT")]
+
+# remove 'refused' responses
+rls <- rls[(rls$GUIDE_A != 99),]
+rls <- rls[(rls$GUIDE_B != 99),]
+rls <- rls[(rls$GUIDE_C != 99),]
+rls <- rls[(rls$GUIDE_D != 99),]
+rls <- rls[(rls$RELTRAD != 900000),]
+rls <- rls[(rls$RELPER != 99),]
+rls <- rls[(rls$IDEO != 99),]
+rls <- rls[(rls$PARTY != 99),]
+
+# Recode religious tradition variable with Religion names
+rls$RELTRADlabels <- recode(rls$RELTRAD,
+                            `1100` = "Evangelical Protestant",
+                            `1200` = "Mainline Protestant",
+                            `1300` = "Historically Black Protestant",
+                            `10000` = "Catholic",
+                            `20000` = "Mormon",
+                            `30000` = "Orthodox Christian",
+                            `40001` = "Jehovah's Witness",
+                            `40002` = "Other Christian",
+                            `50000` = "Jewish",
+                            `60000` = "Muslim",
+                            `70000` = "Buddhist",
+                            `80000` = "Hindu",
+                            `90001` = "Other World Religions",
+                            `90002` = "Other Faiths",
+                            `100000` = "Religiously Unaffiliated")
+
+# Recode Party variable with Party names
+rls$PARTYlabels <- recode(rls$PARTY,
+                          `1` = "Republican",
+                          `2` = "Democrat",
+                          `3` = "Independent",
+                          `4` = "Something else")
+
+# convert GUIDE_A to factor
+rls$GUIDE_A <- factor(rls$GUIDE_A,
+                          levels = 1:5,
+                          labels = c("Extremely important", "Very important", "Somewhat important", "Not too important", "Not at all important"),
+                      ordered = TRUE)
+
+# Guide A summary statistics
+# minimum
+guideamin <- min(rls$GUIDE_A, na.rm = TRUE)
+# maximum
+guideamax <- max(rls$GUIDE_A, na.rm = TRUE)
+# weighted mean
+guideamean <- weighted.mean(rls$GUIDE_A, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+guideasd <- wtd.var(rls$GUIDE_A, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+guidean <- sum(!is.na(rls$GUIDE_A))
+
+# Guide B summary statistics
+# minimum
+guidebmin <- min(rls$GUIDE_B, na.rm = TRUE)
+# maximum
+guidebmax <- max(rls$GUIDE_B, na.rm = TRUE)
+# weighted mean
+guidebmean <- weighted.mean(rls$GUIDE_B, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+guidebsd <- wtd.var(rls$GUIDE_B, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+guidebn <- sum(!is.na(rls$GUIDE_B))
+
+# Guide C summary statistics
+# minimum
+guidecmin <- min(rls$GUIDE_C, na.rm = TRUE)
+# maximum
+guidecmax <- max(rls$GUIDE_C, na.rm = TRUE)
+# weighted mean
+guidecmean <- weighted.mean(rls$GUIDE_C, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+guidecsd <- wtd.var(rls$GUIDE_C, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+guidecn <- sum(!is.na(rls$GUIDE_C))
+
+# Guide D summary statistics
+# minimum
+guidedmin <- min(rls$GUIDE_D, na.rm = TRUE)
+# maximum
+guidedmax <- max(rls$GUIDE_D, na.rm = TRUE)
+# weighted mean
+guidedmean <- weighted.mean(rls$GUIDE_D, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+guidedsd <- wtd.var(rls$GUIDE_D, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+guidedn <- sum(!is.na(rls$GUIDE_D))
+
+# Religiosity summary statistics
+# minimum
+relpermin <- min(rls$RELPER, na.rm = TRUE)
+# maximum
+relpermax <- max(rls$RELPER, na.rm = TRUE)
+# weighted mean
+relpermean <- weighted.mean(rls$RELPER, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+relpersd <- wtd.var(rls$RELPER, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+relpern <- sum(!is.na(rls$RELPER))
+
+# Ideology summary statistics
+# minimum
+ideomin <- min(rls$IDEO, na.rm = TRUE)
+# maximum
+ideomax <- max(rls$IDEO, na.rm = TRUE)
+# weighted mean
+ideomean <- weighted.mean(rls$IDEO, w = rls$WEIGHT, na.rm = TRUE)
+# weighted standard deviation
+ideosd <- wtd.var(rls$IDEO, weights = rls$WEIGHT, normwt = FALSE, na.rm = TRUE) %>% sqrt()
+# count
+ideon <- sum(!is.na(rls$IDEO))
+```
+
+| Variable | Minimum | Maximum | Mean | Standard Deviation | *N* |
+|------------|------------|------------|------------|------------|------------|
+| Guide A | 1 (Extremely important) | 5 (Not at all important) | 2.57 | 1.34 | 34,076 |
+| Guide B | 1 (Extremely important) | 5 (Not at all important | 1.52 | 0.67 | 34,076 |
+| Guide C | 1 (Extremely important) | 5 (Not at all important) | 1.50 | 0.65 | 34,076 |
+| Guide D | 1 (Extremely important) | 5 (Not at all important) | 1.93 | 0.89 | 34,076 |
+| Religiosity | 1 (Very religious) | 4 (Not at all religious) | 2.44 | 1.02 | 34,076 |
+| Ideology | 1 (Very conservative) | 5 (Very liberal) | 2.90 | 1.09 | 34,076 |
+
+: Table 2: Summary Statistics (ordered categorical variables)
+
+Tables 3 and 4 give weighted percentages for religious tradition (Table 3) and political Party (Table 4). In Table 3, the highest percent of people fall into the 'Religiously Unaffiliated' bucket, at 30.42%. Of note, however, if the different sects of Protestantism measured were to be added together rather than measured separately, this would be the largest group with 40.19%. This coupled with the Table 2 summary statistics suggests that while over two-thirds claim to be subscribed to one religion or another, religion is not particularly important in their lives. Further study into how members of specific faiths feel about religion and make moral decisions could provide insight if this is observation that can be applied to all faiths, or if it is specific to certain groups.
+
+Table 4 shows the break down of our data by Political Party. Around 30% responded with Democrat, 30% with Republican, 27% Independent, and 12% 'Something else'. This data could be used to analyze the religious breakup of the political parties, potentially spurring on further study as to why people of one religion or another may choose to be involved with specific political parties.
+
+```{r}
+# create survey design object for unordered categorical variable frequency tables
+design <- svydesign(ids = ~1, data = rls, weights = ~WEIGHT)
+
+# religious tradition variable
+rls$RELTRADlabels <- factor(rls$RELTRADlabels)
+# weighted frequency table for religious tradition variable
+prop <- svymean(~RELTRADlabels, design)
+
+prop_df <- as.data.frame(prop)
+prop_df$Religion <- sub("^RELTRADlabels", "", rownames(prop_df))
+
+# sort the data
+prop_df <- prop_df[order(-prop_df[,1]), ]
+prop_df$Percentage <- paste0(round(prop_df[,1] * 100, 2), "%")
+prop_df <- prop_df[,c("Religion", "Percentage")]
+rownames(prop_df) <- NULL
+
+kable(prop_df, caption = "Table 3: Weighted Religion Percentages")
+
+# reestablish design for party variable
+design <- svydesign(ids = ~1, data = rls, weights = ~WEIGHT)
+# party variable
+rls$PARTYlabels <- factor(rls$PARTYlabels)
+# weighted frequency table for party variable
+prop2 <- svymean(~PARTYlabels, design)
+prop2_df <- as.data.frame(prop2)
+prop2_df$Party <- sub("^PARTYlabels", "", rownames(prop2_df))
+
+#sort the data
+prop2_df <- prop2_df[order(-prop2_df[,1]), ]
+prop2_df$Percentage <- paste0(round(prop2_df[,1] * 100, 2), "%")
+prop2_df <- prop2_df[,c("Party", "Percentage")]
+rownames(prop2_df) <- NULL
+
+kable(prop2_df, caption = "Table 4: Weighted Political Party Percentages")
+```
+
+Plot 1 is an example visualization of what can be done with this data, and they many insights available. Plot 1 shows the weighted proportion of the responses the Guide A by political party. As a reminder, Guide A asks about the importance of religious teachings and beliefs when making decisions about right and wrong. Looking at Plot 1, there is a clear outlier in terms of responses. Democrats, Independents, and 'Something else' are all fairly similar in response to this question, with approximately 20% finding religion extremely important, 20% very important, 25% somewhat important, 15% not too important and 15% not at all important. The 50 percentile for all three of these groups falls in the '3' bucket--somewhat important. 43% of Republicans on the other hand consider religious teachings and beliefs to be extremely important when it comes to making decisions about right and wrong. Continuing on, 30% of Republicans think religion very important, 18% somewhat important, and less than 10% combined thing religion not too important or not at all important. 
+This chart helps explain why the standard deviation for Guide A is so high. It could also be used to inform those trying to appeal to a Republican base, as religion is clearly important to them. Additional research into what religions specifically could shed light on what policies may be popular with this audience. The other thing this chart does is show a similarity between Democrats and Independents. Messaging to win Independents over to the Republican party should not focus on religion, as that does not hold the same priority for Independents as it does for Republicans. On the other hand, Democrats should message religion for Independents in a similar way that they message it for Democrats. 
+
+```{r}
+
+# create design object
+design <- svydesign(ids = ~1, data = rls, weights = ~WEIGHT)
+
+# create weighted table
+weighted_table <- svytable(~PARTYlabels + GUIDE_A, design)
+df_plot <- as.data.frame(weighted_table)
+
+# calculate percentages
+df_plot <- df_plot %>%
+  group_by(PARTYlabels) %>%
+  mutate(Percentage = Freq / sum(Freq) * 100,
+         Label = ifelse(Percentage > 3, paste0(round(Percentage, 1), "%"), "")
+         ) %>%
+  ungroup()
+
+# plot
+ggplot(df_plot, aes(x = PARTYlabels, y = Percentage, fill = GUIDE_A)) +
+  geom_bar(stat = "identity", position = "stack", color = "white") +
+  geom_text(
+    aes(label = Label),
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    size = 3
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Extremely important" = "#FFCDB2",
+      "Very important" = "#FFB4A2",
+      "Somewhat important" = "#E5989B",
+      "Not too important" = "#B5838D",
+      "Not at all important" = "#6D6875"
+    )
+  ) +
+  labs(
+    x = "Party",
+    y = "Percentage",
+    fill = "Religion Importance",
+    title = "",
+    caption = "Plot 1: Religious Morality by Party (Weighted Percentage)"
+  ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 10, hjust = 1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
